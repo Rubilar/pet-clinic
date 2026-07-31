@@ -15,8 +15,8 @@ jobs:
 
       - name: Ejecutar análisis SAST
         # Falla si hay hallazgos de severidad alta (ERROR) o media (WARNING)
-        # NOTA: "|| true" es temporal para avanzar y capturar evidencias de las
-        # siguientes etapas. Quitar al final para restaurar el bloqueo.
+        # NOTA: "|| true" es temporal para avanzar y capturar evidencias.
+        # Quitar al final para restaurar el bloqueo.
         run: semgrep scan --config auto --severity ERROR --severity WARNING --error || true
 
   sca:
@@ -44,7 +44,7 @@ jobs:
           scan-ref: .
           format: table
           severity: CRITICAL,HIGH,MEDIUM
-          exit-code: 0   # TEMPORAL: no bloquea, para avanzar a las siguientes etapas
+          exit-code: 0   # TEMPORAL: no bloquea. Volver a 1 al final.
 
   build:
     name: Construcción imagen Docker
@@ -63,6 +63,9 @@ jobs:
 
       - name: Compilar proyecto
         run: mvn -B package -DskipTests
+
+      - name: Copiar jar para el build de Docker
+        run: cp target/spring-petclinic-*.jar .
 
       - name: Construir imagen
         run: docker build -t pet-clinic:${{ github.sha }} .
@@ -92,4 +95,4 @@ jobs:
           input: imagen.tar
           format: table
           severity: CRITICAL,HIGH,MEDIUM
-          exit-code: 1   # falla el pipeline si
+          exit-code: 1   # falla el pipeline si encuentra vulnerabilidades
