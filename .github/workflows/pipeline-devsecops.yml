@@ -65,7 +65,7 @@ jobs:
         run: mvn -B package -DskipTests
 
       - name: Copiar jar para el build de Docker
-        run: cp target/spring-petclinic-*.jar .
+        run: cp target/spring-petclinic-*.jar spring-petclinic-2.6.0.jar
 
       - name: Construir imagen
         run: docker build -t pet-clinic:${{ github.sha }} .
