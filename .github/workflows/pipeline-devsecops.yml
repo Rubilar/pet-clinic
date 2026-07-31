@@ -17,7 +17,7 @@ jobs:
         # Falla si hay hallazgos de severidad alta (ERROR) o media (WARNING)
         # NOTA: "|| true" es temporal para avanzar y capturar evidencias.
         # Quitar al final para restaurar el bloqueo.
-        run: semgrep scan --config auto --severity ERROR --severity WARNING --error || true
+        run: semgrep scan --config auto --severity ERROR --severity WARNING --error #|| true
 
   sca:
     name: SCA - Trivy (dependencias)
@@ -44,7 +44,7 @@ jobs:
           scan-ref: .
           format: table
           severity: CRITICAL,HIGH,MEDIUM
-          exit-code: 0   # TEMPORAL: no bloquea. Volver a 1 al final.
+          exit-code: 1   # TEMPORAL: no bloquea. Volver a 1 al final.
 
   build:
     name: Construcción imagen Docker
