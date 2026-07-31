@@ -1,0 +1,81 @@
+name: Pipeline DevSecOps - Clinic
+
+on:
+  push:   # se ejecuta automáticamente en cada commit
+
+jobs:
+  sast:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Clonación del repositorio
+        uses: actions/checkout@v4
+
+      - name: Ejecutar análisis SAST
+        # Falla si hay hallazgos de severidad alta (ERROR) o media (WARNING)
+        run: semgrep scan --config auto --severity ERROR --severity WARNING --error
+
+  sca:
+    name: SCA - Dependency Check
+    runs-on: ubuntu-latest
+    needs: sast
+    steps:
+      - name: Clonación del repositorio
+        uses: actions/checkout@v4
+
+      - name: Ejecutar análisis SCA
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: pet-clinic
+          path: .
+          format: HTML
+          # Falla con CVSS >= 4.0 (medias, altas y críticas)
+          args: >
+            --failOnCVSS 4
+
+      - name: Subir reporte SCA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-dependency-check
+          path: reports
+
+  build:
+    name: Construcción imagen Docker
+    runs-on: ubuntu-latest
+    needs: sca
+    steps:
+      - name: Clonación del repositorio
+        uses: actions/checkout@v4
+
+      - name: Construir imagen
+        run: docker build -t pet-clinic:${{ github.sha }} .
+
+      - name: Guardar imagen para siguiente etapa
+        run: docker save pet-clinic:${{ github.sha }} -o imagen.tar
+
+      - name: Subir imagen como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagen-docker
+          path: imagen.tar
+
+  image-security:
+    name: Image Security - Trivy
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Descargar imagen
+        uses: actions/download-artifact@v4
+        with:
+          name: imagen-docker
+
+      - name: Ejecutar análisis de imagen
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          input: imagen.tar
+          format: table
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 1   # falla el pipeline si encuentra vulnerabilidades
