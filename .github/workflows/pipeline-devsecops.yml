@@ -15,6 +15,8 @@ jobs:
 
       - name: Ejecutar análisis SAST
         # Falla si hay hallazgos de severidad alta (ERROR) o media (WARNING)
+        # NOTA: "|| true" es temporal para avanzar y capturar evidencias de las
+        # siguientes etapas. Quitar al final para restaurar el bloqueo.
         run: semgrep scan --config auto --severity ERROR --severity WARNING --error || true
 
   sca:
@@ -24,6 +26,16 @@ jobs:
     steps:
       - name: Clonación del repositorio
         uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Compilar proyecto
+        run: mvn -B package -DskipTests
 
       - name: Ejecutar análisis SCA
         uses: dependency-check/Dependency-Check_Action@main
@@ -49,6 +61,16 @@ jobs:
     steps:
       - name: Clonación del repositorio
         uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Compilar proyecto
+        run: mvn -B package -DskipTests
 
       - name: Construir imagen
         run: docker build -t pet-clinic:${{ github.sha }} .
